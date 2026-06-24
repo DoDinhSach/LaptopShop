@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Palette (Royal Blue theme) -->
+    <color name="red_primary">#4169e1</color>
+    <color name="red_dark">#27408b</color>
+
+    <!-- Surfaces -->
+    <color name="panel_light">#faf0e6</color>
+    <color name="panel_stroke">#87cefa</color>
+    <color name="home_background">#f5fffa</color>
+    <color name="panel_soft">#87cefa</color>
+    <color name="product_card_bg">#faf0e6</color>
+    <color name="product_card_active_bg">#d1e9ff</color>
+
+    <!-- Bottom nav -->
+    <color name="bottom_nav_bg">#FFFFFF</color>
+    <color name="bottom_nav_active">#4169e1</color>
+    <color name="bottom_nav_inactive">#9CA3AF</color>
+    <!-- Ripple/indicator (alpha) -->
+    <color name="bottom_nav_indicator">#224169e1</color>
+
+    <!-- Text -->
+    <color name="white">#FFFFFF</color>
+    <color name="text_primary">#111827</color>
+    <color name="text_sub">#6B7280</color>
+    <color name="text_hint">#9CA3AF</color>
+
+    <!-- Admin redesign -->
+    <color name="admin_primary">#4169e1</color>
+    <color name="admin_primary_dark">#27408b</color>
+    <color name="admin_background">#f5fffa</color>
+    <color name="admin_surface">#faf0e6</color>
+    <color name="admin_surface_soft">#d1e9ff</color>
+    <color name="admin_stroke">#87cefa</color>
+    <color name="supplier_primary">#4169e1</color>
+    <color name="supplier_primary_dark">#27408b</color>
+    <color name="supplier_background">#f5fffa</color>
+    <color name="supplier_surface_soft">#d1e9ff</color>
+    <color name="supplier_stroke">#87cefa</color>
+    <color name="admin_text_primary">#111827</color>
+    <color name="admin_text_secondary">#6B7280</color>
+    <color name="admin_warning">#D97706</color>
+    <color name="admin_warning_soft">#FFF7ED</color>
+    <color name="admin_success">#059669</color>
+    <color name="admin_success_soft">#ECFDF5</color>
+    <color name="admin_danger">#9F1239</color>
+    <color name="admin_danger_soft">#FFF1F2</color>
+    <color name="admin_product_thumb_bg">#F8FAFC</color>
+    <color name="admin_product_action_bg">#F8FAFC</color>
+    <color name="admin_product_status_ok">#15803D</color>
+    <color name="admin_product_status_ok_bg">#DCFCE7</color>
+    <color name="admin_product_status_low">#C2410C</color>
+    <color name="admin_product_status_low_bg">#FFEDD5</color>
+    <color name="admin_product_status_empty">#B91C1C</color>
+    <color name="admin_product_status_empty_bg">#FEE2E2</color>
+    <color name="admin_product_status_stopped_bg">#E5E7EB</color>
+    <color name="admin_bottom_nav_active">#4169e1</color>
+    <color name="admin_bottom_nav_inactive">#9CA3AF</color>
+    <color name="admin_bottom_nav_indicator">#224169e1</color>
+
+    <!-- Dashboard-specific palette -->
+    <color name="admin_dashboard_background">#f5fffa</color>
+    <color name="admin_dashboard_surface">#faf0e6</color>
+    <color name="admin_dashboard_surface_alt">#fdfbf9</color>
+    <color name="admin_dashboard_stroke">#87cefa</color>
+    <color name="admin_dashboard_grid">#D7E3F1</color>
+    <color name="admin_dashboard_blue">#4169e1</color>
+    <color name="admin_dashboard_blue_soft">#d1e9ff</color>
+    <color name="admin_dashboard_green">#16A34A</color>
+    <color name="admin_dashboard_green_soft">#EAF8EF</color>
+    <color name="admin_dashboard_orange">#F59E0B</color>
+    <color name="admin_dashboard_orange_soft">#FFF4DD</color>
+    <color name="admin_dashboard_purple">#8B5CF6</color>
+    <color name="admin_dashboard_purple_soft">#F1E9FF</color>
+    <color name="admin_dashboard_red">#EF4444</color>
+    <color name="admin_dashboard_red_soft">#FEECEC</color>
+    <color name="admin_dashboard_pink">#EC4899</color>
+    <color name="admin_dashboard_pink_soft">#FDF2F8</color>
+    <color name="admin_inventory_alert_border">#EB9907</color>
+</resources>

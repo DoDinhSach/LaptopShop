@@ -1,0 +1,138 @@
+package com.example.laptopshop.ui.cart;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.laptopshop.R;
+import com.example.laptopshop.data.model.GioHangItem;
+import com.example.laptopshop.utils.ProductImageLoader;
+import com.google.android.material.card.MaterialCardView;
+
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
+
+public class CartAdapter extends RecyclerView.Adapter<CartAdapter.VH> {
+
+    public interface Listener {
+        void onChangeQty(GioHangItem item, int newQty);
+        void onRemove(GioHangItem item);
+        void onToggleSelection(GioHangItem item, boolean isSelected);
+    }
+
+    private final ArrayList<GioHangItem> data = new ArrayList<>();
+    private final Set<Long> selectedCartItemIds = new HashSet<>();
+    private final Listener listener;
+    private Context ctx;
+
+    public CartAdapter(Listener listener) {
+        this.listener = listener;
+    }
+
+    public void setData(ArrayList<GioHangItem> list) {
+        data.clear();
+        data.addAll(list);
+        notifyDataSetChanged();
+    }
+
+    public void setSelectedCartItemIds(Set<Long> ids) {
+        selectedCartItemIds.clear();
+        if (ids != null) selectedCartItemIds.addAll(ids);
+        notifyDataSetChanged();
+    }
+
+    @NonNull
+    @Override
+    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        ctx = parent.getContext();
+        View v = LayoutInflater.from(ctx).inflate(R.layout.item_cart, parent, false);
+        return new VH(v);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull VH h, int position) {
+        GioHangItem it = data.get(position);
+
+        String variant = buildVariantLabel(it);
+        String name = it.tenSanPham + (it.hang == null ? "" : " (" + it.hang + ")");
+        if (!variant.isEmpty()) {
+            name += " • " + variant;
+        }
+        h.tvName.setText(name);
+
+        String giaText = NumberFormat.getNumberInstance(new Locale("vi", "VN")).format(it.giaSauGiam()) + "đ";
+        h.tvPrice.setText("Giá: " + giaText + (it.giamGia > 0 ? " (" + it.giamGia + "%)" : ""));
+        h.tvQty.setText(String.valueOf(it.soLuong));
+
+        ProductImageLoader.load(h.ivThumb, it.tenAnh, it.tenSanPham, it.hang);
+
+        boolean isSelected = selectedCartItemIds.contains(it.id);
+        h.cbSelect.setOnCheckedChangeListener(null);
+        h.cbSelect.setChecked(isSelected);
+        bindSelectionStyle(h, isSelected);
+
+        h.cbSelect.setOnCheckedChangeListener((buttonView, checked) -> {
+            bindSelectionStyle(h, checked);
+            listener.onToggleSelection(it, checked);
+        });
+
+        h.itemView.setOnClickListener(v -> h.cbSelect.setChecked(!h.cbSelect.isChecked()));
+        h.btnMinus.setOnClickListener(v -> listener.onChangeQty(it, it.soLuong - 1));
+        h.btnPlus.setOnClickListener(v -> listener.onChangeQty(it, it.soLuong + 1));
+        h.btnDelete.setOnClickListener(v -> listener.onRemove(it));
+    }
+
+    @Override
+    public int getItemCount() {
+        return data.size();
+    }
+
+    private void bindSelectionStyle(VH h, boolean isSelected) {
+        h.cardRoot.setCardBackgroundColor(ContextCompat.getColor(ctx,
+                isSelected ? R.color.product_card_active_bg : R.color.panel_light));
+        h.cardRoot.setStrokeColor(ContextCompat.getColor(ctx,
+                isSelected ? R.color.red_primary : R.color.panel_stroke));
+        h.cardRoot.setStrokeWidth((int) (ctx.getResources().getDisplayMetrics().density * (isSelected ? 2 : 1)));
+    }
+
+
+    private String buildVariantLabel(GioHangItem item) {
+        String storage = item.dungLuong == null ? "" : item.dungLuong.trim();
+        String color = item.mauSac == null ? "" : item.mauSac.trim();
+        if (storage.isEmpty()) return color;
+        if (color.isEmpty()) return storage;
+        return storage + " • " + color;
+    }
+
+    static class VH extends RecyclerView.ViewHolder {
+        MaterialCardView cardRoot;
+        CheckBox cbSelect;
+        ImageView ivThumb, btnDelete;
+        TextView tvName, tvPrice, tvQty;
+        View btnMinus, btnPlus;
+
+        VH(@NonNull View itemView) {
+            super(itemView);
+            cardRoot = itemView.findViewById(R.id.cardRoot);
+            cbSelect = itemView.findViewById(R.id.cbSelect);
+            ivThumb = itemView.findViewById(R.id.ivThumb);
+            tvName = itemView.findViewById(R.id.tvName);
+            tvPrice = itemView.findViewById(R.id.tvPrice);
+            tvQty = itemView.findViewById(R.id.tvQty);
+            btnMinus = itemView.findViewById(R.id.btnMinus);
+            btnPlus = itemView.findViewById(R.id.btnPlus);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
+        }
+    }
+}

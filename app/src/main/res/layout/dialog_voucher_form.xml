@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_panel"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvVoucherDialogTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Thêm mã giảm giá"
+        android:textColor="@color/admin_primary"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/edtVoucherCode"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_auth_input"
+        android:hint="Mã code (Ví dụ: SALE10K)"
+        android:inputType="textCapCharacters"
+        android:paddingHorizontal="16dp" />
+
+    <EditText
+        android:id="@+id/edtVoucherAmount"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_auth_input"
+        android:hint="Số tiền giảm (đ)"
+        android:inputType="number"
+        android:paddingHorizontal="16dp" />
+
+    <EditText
+        android:id="@+id/edtVoucherMinOrder"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_auth_input"
+        android:hint="Giá trị đơn tối thiểu (đ)"
+        android:inputType="number"
+        android:paddingHorizontal="16dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Sản phẩm áp dụng:"
+        android:textColor="@color/text_sub"
+        android:textSize="12sp" />
+
+    <Spinner
+        android:id="@+id/spVoucherProduct"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_auth_input" />
+
+    <EditText
+        android:id="@+id/edtVoucherExpiry"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_auth_input"
+        android:clickable="true"
+        android:focusable="false"
+        android:hint="Ngày hết hạn (dd/MM/yyyy)"
+        android:paddingHorizontal="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelVoucher"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="54dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:text="Hủy"
+            android:textColor="@color/text_sub"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveVoucher"
+            android:layout_width="0dp"
+            android:layout_height="54dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="Lưu lại"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/admin_primary"
+            app:cornerRadius="12dp" />
+    </LinearLayout>
+</LinearLayout>

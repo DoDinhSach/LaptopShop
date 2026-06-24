@@ -1,0 +1,14 @@
+package com.example.laptopshop.data.model;
+
+public class DonHangItem {
+    public long id;
+    public long orderId;
+    public long productId;
+    public String tenSanPham;
+    public int donGia;
+    public int giamGia;
+    public int soLuong;
+    public int thanhTien;
+    public String dungLuong;
+    public String mauSac;
+}

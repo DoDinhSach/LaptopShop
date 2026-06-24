@@ -1,0 +1,141 @@
+package com.example.laptopshop.ui.home;
+
+import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.laptopshop.R;
+import com.example.laptopshop.utils.InventoryPolicy;
+import com.example.laptopshop.utils.ProductImageLoader;
+import com.google.android.material.button.MaterialButton;
+
+import java.util.ArrayList;
+
+public class InventoryManagementAdapter extends RecyclerView.Adapter<InventoryManagementAdapter.VH> {
+
+    interface Listener {
+        void onCreateReceipt(InventoryManagementItem item);
+    }
+
+    private final ArrayList<InventoryManagementItem> data = new ArrayList<>();
+    private final boolean alertMode;
+    private final Listener listener;
+
+    InventoryManagementAdapter() {
+        this(false, null);
+    }
+
+    InventoryManagementAdapter(Listener listener) {
+        this(true, listener);
+    }
+
+    private InventoryManagementAdapter(boolean alertMode, Listener listener) {
+        this.alertMode = alertMode;
+        this.listener = listener;
+    }
+
+    void setData(ArrayList<InventoryManagementItem> list) {
+        data.clear();
+        if (list != null) {
+            data.addAll(list);
+        }
+        notifyDataSetChanged();
+    }
+
+    @NonNull
+    @Override
+    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        int layoutRes = alertMode ? R.layout.item_inventory_alert : R.layout.item_inventory_management;
+        return new VH(LayoutInflater.from(parent.getContext()).inflate(layoutRes, parent, false));
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull VH holder, int position) {
+        InventoryManagementItem item = data.get(position);
+        Context context = holder.itemView.getContext();
+
+        holder.tvName.setText(item.productName);
+        holder.tvBrand.setText(item.brand);
+        holder.tvCurrentStockValue.setText(context.getString(R.string.admin_inventory_value_units, item.currentStock));
+        holder.tvMinimumStockValue.setText(context.getString(R.string.admin_inventory_value_units, item.minimumStock));
+        bindStatus(context, holder, item.status, item.currentStock);
+
+        if (alertMode) {
+            if (holder.ivThumb != null) {
+                ProductImageLoader.load(holder.ivThumb, item.imageName, item.productName, item.brand);
+            }
+            if (holder.btnCreateReceipt != null) {
+                holder.btnCreateReceipt.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onCreateReceipt(item);
+                    }
+                });
+            }
+        } else {
+            if (holder.tvTotalImportValue != null) {
+                holder.tvTotalImportValue.setText(context.getString(R.string.admin_inventory_value_units, item.totalImport));
+            }
+            if (holder.tvTotalExportValue != null) {
+                holder.tvTotalExportValue.setText(context.getString(R.string.admin_inventory_value_units, item.totalExport));
+            }
+        }
+    }
+
+    private void bindStatus(Context context, VH holder, String status, int currentStock) {
+        InventoryPolicy.StatusAppearance appearance = InventoryPolicy.getAppearance(context, currentStock);
+        holder.tvStatus.setText(appearance.label);
+        if (alertMode) {
+            holder.tvStatus.setTextColor(ContextCompat.getColor(context, android.R.color.white));
+        } else {
+            holder.tvStatus.setTextColor(appearance.labelColor);
+            Drawable background = holder.tvStatus.getBackground();
+            if (background instanceof GradientDrawable) {
+                ((GradientDrawable) background.mutate()).setColor(appearance.labelBackgroundTint.getDefaultColor());
+            }
+        }
+        holder.tvCurrentStockValue.setTextColor(appearance.stockColor);
+        if (alertMode) {
+            holder.tvCurrentStockValue.setContentDescription(context.getString(R.string.admin_inventory_current_stock_value, currentStock));
+        }
+    }
+
+
+    @Override
+    public int getItemCount() {
+        return data.size();
+    }
+
+    static class VH extends RecyclerView.ViewHolder {
+        TextView tvName;
+        TextView tvBrand;
+        TextView tvStatus;
+        TextView tvCurrentStockValue;
+        TextView tvMinimumStockValue;
+        TextView tvTotalImportValue;
+        TextView tvTotalExportValue;
+        ImageView ivThumb;
+        MaterialButton btnCreateReceipt;
+
+        VH(@NonNull View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tvInventoryProductName);
+            tvBrand = itemView.findViewById(R.id.tvInventoryBrand);
+            tvStatus = itemView.findViewById(R.id.tvInventoryStatus);
+            tvCurrentStockValue = itemView.findViewById(R.id.tvCurrentStockValue);
+            tvMinimumStockValue = itemView.findViewById(R.id.tvMinimumStockValue);
+            tvTotalImportValue = itemView.findViewById(R.id.tvTotalImportValue);
+            tvTotalExportValue = itemView.findViewById(R.id.tvTotalExportValue);
+            ivThumb = itemView.findViewById(R.id.ivInventoryThumb);
+            btnCreateReceipt = itemView.findViewById(R.id.btnCreateReceipt);
+        }
+    }
+}

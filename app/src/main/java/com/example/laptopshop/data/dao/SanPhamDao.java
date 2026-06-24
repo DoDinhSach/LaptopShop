@@ -1,0 +1,422 @@
+package com.example.laptopshop.data.dao;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.text.TextUtils;
+
+import com.example.laptopshop.data.db.DBHelper;
+import com.example.laptopshop.data.model.OrderStatus;
+import com.example.laptopshop.data.model.SanPham;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class SanPhamDao {
+    // hộp điều kiện lọc
+    public static class SanPhamFilter {
+        public String keyword;
+        public String brand;
+        public String productType;
+        public String chipset;
+        public String sortMode;
+        public String screenSize;
+        public String resolution;
+        public int minPrice;
+        public int maxPrice;
+        public int minRomGb;
+        public int maxRomGb;
+        public int minRamGb;
+        public int maxRamGb;
+        public int refreshRate;
+        public boolean onlyInStock;
+        public boolean onlyDiscounted;
+        public boolean includeInactive;
+    }
+
+    public static class SanPhamDeactivationCheck {
+        public SanPham sanPham;
+        public int currentStock;
+        public int activeCartCount;
+        public int openOrderCount;
+        public boolean alreadyInactive;
+
+        public boolean canDeactivate() {
+            return sanPham != null
+                    && currentStock <= 0
+                    && activeCartCount <= 0
+                    && openOrderCount <= 0;
+        }
+    }
+
+    private final DBHelper dbHelper;
+
+    public SanPhamDao(Context ctx) {
+        dbHelper = new DBHelper(ctx);
+    }
+
+    public ArrayList<SanPham> layTatCa() {
+        return queryProducts(DBHelper.COL_IS_ACTIVE + "=1", null, null);
+    }
+
+    public ArrayList<SanPham> layTatCaChoAdmin() {
+        return queryProducts(null, null, null);
+    }
+
+    public ArrayList<SanPham> layTheoHang(String hang) {
+        return queryProducts(DBHelper.COL_IS_ACTIVE + "=1 AND " + DBHelper.COL_P_BRAND + "=?", new String[]{hang}, null);
+    }
+
+    public ArrayList<SanPham> laySanPhamDangBanTheoHang(String brand) {
+        String normalizedBrand = trimToNull(brand);
+        if (normalizedBrand == null) {
+            return new ArrayList<>();
+        }
+        String whereClause = DBHelper.COL_IS_ACTIVE + "=1" +
+                " AND TRIM(IFNULL(" + DBHelper.COL_P_BRAND + ",'') ) <> ''" +
+                " AND UPPER(TRIM(" + DBHelper.COL_P_BRAND + ")) = UPPER(?)";
+        return queryProducts(
+                whereClause,
+                new String[]{normalizedBrand},
+                DBHelper.COL_P_NAME + " COLLATE NOCASE ASC, " + DBHelper.COL_ID + " DESC"
+        );
+    }
+
+    public ArrayList<SanPham> timKiem(String tuKhoa) {
+        String k = "%" + tuKhoa + "%";
+        return queryProducts(DBHelper.COL_IS_ACTIVE + "=1 AND (" + DBHelper.COL_P_NAME + " LIKE ? OR " + DBHelper.COL_P_BRAND + " LIKE ?)", new String[]{k, k}, null);
+    }
+
+    public ArrayList<SanPham> timKiemChoAdmin(String tuKhoa) {
+        String k = "%" + tuKhoa + "%";
+        return queryProducts("(" + DBHelper.COL_P_NAME + " LIKE ? OR " + DBHelper.COL_P_BRAND + " LIKE ?)", new String[]{k, k}, null);
+    }
+
+    public ArrayList<SanPham> timKiemTheoHang(String hang, String tuKhoa) {
+        String k = "%" + tuKhoa + "%";
+        return queryProducts(DBHelper.COL_IS_ACTIVE + "=1 AND " + DBHelper.COL_P_BRAND + "=? AND " + DBHelper.COL_P_NAME + " LIKE ?", new String[]{hang, k}, null);
+    }
+
+    public ArrayList<SanPham> locSanPham(SanPhamFilter filter) {
+        SanPhamFilter safeFilter = filter == null ? new SanPhamFilter() : filter;
+        ArrayList<String> args = new ArrayList<>(); 
+        ArrayList<String> conditions = new ArrayList<>(); 
+
+        if (!safeFilter.includeInactive) {
+            conditions.add(DBHelper.COL_IS_ACTIVE + "=1");
+        }
+
+        String keyword = trimToNull(safeFilter.keyword);
+        if (keyword != null) {
+            String likeKeyword = "%" + keyword + "%";
+            conditions.add("(" + DBHelper.COL_P_NAME + " LIKE ? OR " + DBHelper.COL_P_BRAND + " LIKE ?)");
+            args.add(likeKeyword);
+            args.add(likeKeyword);
+        }
+
+        String brand = trimToNull(safeFilter.brand);
+        if (brand != null) {
+            conditions.add(DBHelper.COL_P_BRAND + "=?");
+            args.add(brand);
+        }
+
+        String productType = trimToNull(safeFilter.productType);
+        if (productType != null) {
+            conditions.add(DBHelper.COL_P_TYPE + "=?");
+            args.add(productType);
+        }
+
+        String chipset = trimToNull(safeFilter.chipset);
+        if (chipset != null) {
+            conditions.add(DBHelper.COL_P_CHIPSET + " LIKE ?");
+            args.add("%" + chipset + "%");
+        }
+
+        String screenSize = trimToNull(safeFilter.screenSize);
+        if (screenSize != null) {
+            conditions.add(DBHelper.COL_P_SCREEN + " LIKE ?");
+            args.add("%" + screenSize + "%");
+        }
+
+        String resolution = trimToNull(safeFilter.resolution);
+        if (resolution != null) {
+            conditions.add(DBHelper.COL_P_RESOLUTION + " LIKE ?");
+            args.add("%" + resolution + "%");
+        }
+
+        if (safeFilter.refreshRate > 0) {
+            conditions.add(DBHelper.COL_P_REFRESH_RATE + ">=?");
+            args.add(String.valueOf(safeFilter.refreshRate));
+        }
+
+        if (safeFilter.minPrice > 0) {
+            conditions.add(DBHelper.COL_P_PRICE + ">=?");
+            args.add(String.valueOf(safeFilter.minPrice));
+        }
+
+        if (safeFilter.maxPrice > 0) {
+            conditions.add(DBHelper.COL_P_PRICE + "<=?");
+            args.add(String.valueOf(safeFilter.maxPrice));
+        }
+
+        if (safeFilter.minRomGb > 0) {
+            conditions.add(DBHelper.COL_P_ROM_GB + ">=?");
+            args.add(String.valueOf(safeFilter.minRomGb));
+        }
+
+        if (safeFilter.maxRomGb > 0) {
+            conditions.add(DBHelper.COL_P_ROM_GB + "<=?");
+            args.add(String.valueOf(safeFilter.maxRomGb));
+        }
+
+        if (safeFilter.minRamGb > 0) {
+            conditions.add(DBHelper.COL_P_RAM_GB + ">=?");
+            args.add(String.valueOf(safeFilter.minRamGb));
+        }
+
+        if (safeFilter.maxRamGb > 0) {
+            conditions.add(DBHelper.COL_P_RAM_GB + "<=?");
+            args.add(String.valueOf(safeFilter.maxRamGb));
+        }
+
+        if (safeFilter.onlyInStock) {
+            conditions.add(DBHelper.COL_P_STOCK + ">0");
+        }
+
+        if (safeFilter.onlyDiscounted) {
+            conditions.add(DBHelper.COL_P_DISCOUNT + ">0");
+        }
+
+        String whereClause = conditions.isEmpty() ? null : TextUtils.join(" AND ", conditions);
+        return queryProducts(whereClause, args.isEmpty() ? null : args.toArray(new String[0]), resolveOrderBy(safeFilter.sortMode));
+    }
+
+    public SanPham getById(long id) {
+        return getById(id, false);
+    }
+
+    public SanPham getById(long id, boolean includeInactive) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String sql = "SELECT * FROM " + DBHelper.TBL_PRODUCTS + " WHERE " + DBHelper.COL_ID + "=?";
+        if (!includeInactive) {
+            sql += " AND " + DBHelper.COL_IS_ACTIVE + "=1";
+        }
+        sql += " LIMIT 1";
+        Cursor c = db.rawQuery(sql, new String[]{String.valueOf(id)});
+        SanPham p = null;
+        if (c.moveToFirst()) p = docSanPham(c);
+        c.close();
+        return p;
+    }
+
+    public HashMap<Long, Integer> getCurrentStockMap(boolean includeInactive) {
+        ArrayList<SanPham> products = includeInactive ? layTatCaChoAdmin() : layTatCa();
+        HashMap<Long, Integer> stockByProductId = new HashMap<>();
+        for (SanPham product : products) {
+            stockByProductId.put(product.maSanPham, Math.max(0, product.tonKho));
+        }
+        return stockByProductId;
+    }
+
+    public SanPhamDeactivationCheck checkDeactivationEligibility(long productId) {
+        SanPhamDeactivationCheck result = new SanPhamDeactivationCheck();
+        result.sanPham = getById(productId, true);
+        if (result.sanPham == null) {
+            return result;
+        }
+
+        result.alreadyInactive = !result.sanPham.isActive;
+        result.currentStock = Math.max(0, result.sanPham.tonKho);
+        result.activeCartCount = queryCount(
+                "SELECT COUNT(DISTINCT " + DBHelper.COL_C_USER_ID + ") FROM " + DBHelper.TBL_CART +
+                        " WHERE " + DBHelper.COL_C_PRODUCT_ID + "=?",
+                new String[]{String.valueOf(productId)}
+        );
+        result.openOrderCount = queryCount(
+                "SELECT COUNT(DISTINCT oi." + DBHelper.COL_OI_ORDER_ID + ")" +
+                        " FROM " + DBHelper.TBL_ORDER_ITEMS + " oi" +
+                        " JOIN " + DBHelper.TBL_ORDERS + " o ON o." + DBHelper.COL_ID + " = oi." + DBHelper.COL_OI_ORDER_ID +
+                        " WHERE oi." + DBHelper.COL_OI_PRODUCT_ID + "=?" +
+                        " AND o." + DBHelper.COL_O_ORDER_STATUS + " IN (?, ?)",
+                new String[]{
+                        String.valueOf(productId),
+                        OrderStatus.STATUS_CHO_XAC_NHAN,
+                        OrderStatus.STATUS_DANG_XU_LY
+                }
+        );
+        return result;
+    }
+
+    public long insert(SanPham p) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        return db.insert(DBHelper.TBL_PRODUCTS, null, toValues(p));
+    }
+
+    public boolean update(SanPham p) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        return db.update(DBHelper.TBL_PRODUCTS, toValues(p),
+                DBHelper.COL_ID + "=?", new String[]{String.valueOf(p.maSanPham)}) > 0;
+    }
+
+    public boolean setActive(long id, boolean active) {
+        SanPham product = getById(id, true);
+        if (product == null) {
+            return false;
+        }
+
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(DBHelper.COL_IS_ACTIVE, active ? 1 : 0);
+        return db.update(DBHelper.TBL_PRODUCTS,
+                values,
+                DBHelper.COL_ID + "=?",
+                new String[]{String.valueOf(id)}) > 0;
+    }
+
+    public boolean delete(long id) {
+        SanPhamDeactivationCheck check = checkDeactivationEligibility(id);
+        if (!check.canDeactivate()) {
+            return false;
+        }
+
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        return db.delete(DBHelper.TBL_PRODUCTS,
+                DBHelper.COL_ID + "=?",
+                new String[]{String.valueOf(id)}) > 0;
+    }
+
+    public boolean giamTonKho(SQLiteDatabase db, long productId, int qty) {
+        return db.update(
+                DBHelper.TBL_PRODUCTS,
+                buildStockDecreaseValues(productId, qty),
+                DBHelper.COL_ID + "=? AND " + DBHelper.COL_IS_ACTIVE + "=1 AND " + DBHelper.COL_P_STOCK + " >= ?",
+                new String[]{String.valueOf(productId), String.valueOf(qty)}
+        ) > 0;
+    }
+
+    private ContentValues buildStockDecreaseValues(long productId, int qty) {
+        SanPham product = getById(productId, true);
+        ContentValues values = new ContentValues();
+        if (product == null) {
+            values.put(DBHelper.COL_P_STOCK, 0);
+            return values;
+        }
+        values.put(DBHelper.COL_P_STOCK, Math.max(0, product.tonKho - qty));
+        return values;
+    }
+
+    private int queryCount(String sql, String[] args) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor c = db.rawQuery(sql, args);
+        int count = 0;
+        if (c.moveToFirst() && !c.isNull(0)) {
+            count = c.getInt(0);
+        }
+        c.close();
+        return count;
+    }
+
+    private ArrayList<SanPham> queryProducts(String whereClause, String[] args, String orderBy) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        ArrayList<SanPham> list = new ArrayList<>();
+        String sql = "SELECT * FROM " + DBHelper.TBL_PRODUCTS;
+        if (whereClause != null && !whereClause.trim().isEmpty()) {
+            sql += " WHERE " + whereClause;
+        }
+        sql += " ORDER BY " + (orderBy == null || orderBy.trim().isEmpty() ? DBHelper.COL_ID + " DESC" : orderBy);
+        Cursor c = db.rawQuery(sql, args);
+        while (c.moveToNext()) list.add(docSanPham(c));
+        c.close();
+        return list;
+    }
+
+    private String resolveOrderBy(String sortMode) {
+        String safeMode = trimToNull(sortMode);
+        if (safeMode == null || "default".equals(safeMode)) {
+            return DBHelper.COL_ID + " DESC";
+        }
+        if ("price_asc".equals(safeMode)) {
+            return DBHelper.COL_P_PRICE + " ASC, " + DBHelper.COL_ID + " DESC";
+        }
+        if ("price_desc".equals(safeMode)) {
+            return DBHelper.COL_P_PRICE + " DESC, " + DBHelper.COL_ID + " DESC";
+        }
+        if ("name_asc".equals(safeMode)) {
+            return DBHelper.COL_P_NAME + " COLLATE NOCASE ASC, " + DBHelper.COL_ID + " DESC";
+        }
+        if ("discount_desc".equals(safeMode)) {
+            return DBHelper.COL_P_DISCOUNT + " DESC, " + DBHelper.COL_P_PRICE + " DESC";
+        }
+        return DBHelper.COL_ID + " DESC";
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private ContentValues toValues(SanPham p) {
+        ContentValues v = new ContentValues();
+        v.put(DBHelper.COL_P_NAME, p.tenSanPham);
+        v.put(DBHelper.COL_P_BRAND, p.hang);
+        v.put(DBHelper.COL_P_PRICE, p.gia);
+        v.put(DBHelper.COL_P_STOCK, p.tonKho);
+        v.put(DBHelper.COL_P_DISCOUNT, p.giamGia);
+        v.put(DBHelper.COL_P_DESC, p.moTa);
+        v.put(DBHelper.COL_P_IMAGE, p.tenAnh);
+        v.put(DBHelper.COL_P_OS, p.heDieuHanh);
+        v.put(DBHelper.COL_P_ROM_GB, p.romGb);
+        v.put(DBHelper.COL_P_RAM_GB, p.ramGb);
+        v.put(DBHelper.COL_P_CHIPSET, p.chipset);
+        v.put(DBHelper.COL_P_SCREEN, p.manHinh);
+        v.put(DBHelper.COL_P_CAMERA, p.camera);
+        v.put(DBHelper.COL_P_BATTERY, p.pinMah);
+        v.put(DBHelper.COL_P_COLORS, p.mauSac);
+        v.put(DBHelper.COL_P_TYPE, p.loaiSanPham);
+        v.put(DBHelper.COL_P_REFRESH_RATE, p.tanSoQuet);
+        v.put(DBHelper.COL_P_RESOLUTION, p.doPhanGiai);
+        v.put(DBHelper.COL_P_RATING, p.danhGia);
+        v.put(DBHelper.COL_P_SOLD, p.daBan);
+        v.put(DBHelper.COL_IS_ACTIVE, p.isActive ? 1 : 0);
+        return v;
+    }
+
+    private SanPham docSanPham(Cursor c) {
+        SanPham p = new SanPham();
+        p.maSanPham = c.getLong(c.getColumnIndexOrThrow(DBHelper.COL_ID));
+        p.tenSanPham = c.getString(c.getColumnIndexOrThrow(DBHelper.COL_P_NAME));
+        p.hang = c.getString(c.getColumnIndexOrThrow(DBHelper.COL_P_BRAND));
+        p.gia = c.getInt(c.getColumnIndexOrThrow(DBHelper.COL_P_PRICE));
+        p.tonKho = c.getInt(c.getColumnIndexOrThrow(DBHelper.COL_P_STOCK));
+        p.giamGia = c.getInt(c.getColumnIndexOrThrow(DBHelper.COL_P_DISCOUNT));
+        p.moTa = c.getString(c.getColumnIndexOrThrow(DBHelper.COL_P_DESC));
+        p.tenAnh = c.getString(c.getColumnIndexOrThrow(DBHelper.COL_P_IMAGE));
+        p.heDieuHanh = c.getString(c.getColumnIndexOrThrow(DBHelper.COL_P_OS));
+        p.romGb = c.getInt(c.getColumnIndexOrThrow(DBHelper.COL_P_ROM_GB));
+        p.ramGb = c.getInt(c.getColumnIndexOrThrow(DBHelper.COL_P_RAM_GB));
+        p.chipset = c.getString(c.getColumnIndexOrThrow(DBHelper.COL_P_CHIPSET));
+        p.manHinh = c.getString(c.getColumnIndexOrThrow(DBHelper.COL_P_SCREEN));
+        p.camera = c.getString(c.getColumnIndexOrThrow(DBHelper.COL_P_CAMERA));
+        p.pinMah = c.getInt(c.getColumnIndexOrThrow(DBHelper.COL_P_BATTERY));
+        p.mauSac = c.getString(c.getColumnIndexOrThrow(DBHelper.COL_P_COLORS));
+        
+        int typeIdx = c.getColumnIndex(DBHelper.COL_P_TYPE);
+        if (typeIdx >= 0) p.loaiSanPham = c.getString(typeIdx);
+        
+        int rateIdx = c.getColumnIndex(DBHelper.COL_P_REFRESH_RATE);
+        if (rateIdx >= 0) p.tanSoQuet = c.getInt(rateIdx);
+        
+        int resIdx = c.getColumnIndex(DBHelper.COL_P_RESOLUTION);
+        if (resIdx >= 0) p.doPhanGiai = c.getString(resIdx);
+
+        int ratingIndex = c.getColumnIndex(DBHelper.COL_P_RATING);
+        p.danhGia = ratingIndex < 0 ? 0f : c.getFloat(ratingIndex);
+        int soldIndex = c.getColumnIndex(DBHelper.COL_P_SOLD);
+        p.daBan = soldIndex < 0 ? 0 : c.getInt(soldIndex);
+        int activeIndex = c.getColumnIndex(DBHelper.COL_IS_ACTIVE);
+        p.isActive = activeIndex < 0 || c.getInt(activeIndex) == 1;
+        return p;
+    }
+}
